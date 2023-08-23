@@ -5,10 +5,12 @@ const bodyParser = require("body-parser");
 const ejs = require("ejs");
 const { default: mongoose } = require("mongoose");
 // const encrypt = require("mongoose-encryption");
-const md5 = require("md5")
+// const md5 = require("md5")
+const bcrypt = require("bcrypt")
+const saltRounds = 10;
 
 const app = express()
-console.log(process.env.SECRET)
+// console.log(process.env.SECRET)
 
 
 const port = 3000
@@ -48,29 +50,34 @@ app.get("/register", function(req, res){
   });
 
 app.post("/register", async function(req, res){
-    const newUser = new User({
-        email : req.body.username,
-        password: md5(req.body.password),
-    })
-    await newUser.save()
-    res.render("secrets")
-    console.log("Successfully save username")
+    bcrypt.hash(req.body.password, saltRounds, async function(err, hash) {
+        const newUser = new User({
+            email : req.body.username,
+            password: hash
+        })
+        await newUser.save()
+        res.render("secrets")
+        console.log("Successfully save username")
+    });
+
+
+    
   })
 
 app.post("/login", async (req, res) => {
     const username = req.body.username
     const password = req.body.password
     const check = await User.findOne({email: username})
-    if (check.password === md5(password)) {
-        res.render("secrets")
-        console.log(check)
-    }
-    else {
-        console.log(check)
-        console.log("Error")
-        res.redirect("/login")
-        console.log(md5(check.password))
-    }
+    bcrypt.compare(password, check.password, function(err, result) {
+        if (result === true) {
+            console.log(check)
+            res.render("secrets")
+        }      
+        else {
+            console.log("Error")
+            res.redirect("/login")
+        }
+    });
 }) 
 
 app.listen(port, () => {
