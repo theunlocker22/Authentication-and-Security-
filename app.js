@@ -40,6 +40,7 @@ userSchema = new mongoose.Schema ({
     email: String,
     password: String,
     googleId: String, 
+    secret: String, 
 })
 
 // userSchema.plugin(encrypt, { secret: process.env.SECRET, encryptedFields: ["password"] } );
@@ -75,6 +76,18 @@ passport.use(new GoogleStrategy({
   }
 ));
 
+app.post("/submit" , async (req, res) => {
+  const submittedSecret = req.body.secret
+  const foundUser = await User.findOne({_id: req.user._id})
+  if (foundUser) {
+    foundUser.secret = submittedSecret
+    await foundUser.save()
+    res.redirect("/secrets")
+  }
+  else {
+    console.log("Error")
+  }
+})
 
 
 
@@ -93,7 +106,16 @@ app.get("/auth/google/secrets",
     res.redirect("/secrets");
   });
 
-  
+app.get("/submit", function(req, res){
+  if (req.isAuthenticated()){
+    res.render("submit")
+  }
+  else {
+    res.redirect("login")
+  }
+})
+
+
 app.get("/login", function(req, res){
     res.render("login");
   });
